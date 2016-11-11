@@ -7,7 +7,7 @@ from PyQt5.QtCore import QDir, Qt
 from Ui_MainWindow import Ui_ANTool
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap
+from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap,QIcon
 
 import os
 import sys
@@ -60,7 +60,6 @@ def getdeviceslist():
             if pid_tag[x] == 'device':
                 command = 'adb -s ' + \
                     pid_s[x] + ' shell cat /system/build.prop | grep model'
-                    pid_s[x] + 'shell getprop | grep "model\|version.sdk\|manufacturer\|hardware\|platform\|revision\|serialno\|product.name\|brand"'
                 modeinfo = exctcmd(command).strip('\n')[17:]
                 pid_tag[x] = pid_tag[x] + "-" + modeinfo
 
@@ -110,7 +109,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         self.devicelist.addItems(dict_device.keys())
 
         self.apklist.addItems(self.getapklist())
-        self.changepath.clicked.connect(self.changePath)  # 会挂，不能用啊,暂时用来测试功能
+        self.changepath.clicked.connect(self.get_text)  # 会挂，不能用啊,暂时用来测试功能
         self.btn_reset.clicked.connect(self.reset)
         self.btn_install.clicked.connect(self.installapp)
         self.btn_unitstall.clicked.connect(self.unitstallapp)
@@ -142,13 +141,8 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
 
         path = cpath.getExistingDirectory()
         self.text_result.append(str(path))
-        self.apkpath.setText(str(path))
 
-        #重置apk
-        self.apklist.clear()
-        self.getapklist()
-        self.apklist.addItems(self.getapklist())
-        
+        self.apkpath.setText(str(path))
 
     def getapklist(self):
         global list_apks
@@ -330,11 +324,13 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         # self.text_result.setText("")
 
 
-if __name__ == "__main__":
-    l = {}
+if __name__ == "__main__": 
     l = getdeviceslist()
 
     app = QtWidgets.QApplication(sys.argv)
     myshow = MyWindow()
+    #icon = QtGui.QIcon("logo.png")
+    #icon.addPixmap(QtGui.QPixmap("logo.ico"),QtGui.QIcon.Normal, QtGui.QIcon.Off)
+    #myshow.setWindowIcon(QIcon('logo.ico'))
     myshow.show()
     sys.exit(app.exec_())
