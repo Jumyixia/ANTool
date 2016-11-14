@@ -7,7 +7,7 @@ from PyQt5.QtCore import QDir, Qt
 from Ui_MainWindow import Ui_ANTool
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap,QIcon
+from PyQt5.QtGui import QImage, QPainter, QPalette, QPixmap
 
 import os
 import sys
@@ -60,6 +60,8 @@ def getdeviceslist():
             if pid_tag[x] == 'device':
                 command = 'adb -s ' + \
                     pid_s[x] + ' shell cat /system/build.prop | grep model'
+                # pid_s[x] + 'shell getprop | grep
+                # "model\|version.sdk\|manufacturer\|hardware\|platform\|revision\|serialno\|product.name\|brand"'
                 modeinfo = exctcmd(command).strip('\n')[17:]
                 pid_tag[x] = pid_tag[x] + "-" + modeinfo
 
@@ -70,7 +72,7 @@ def getdeviceslist():
 
 class ImageViewer(QMainWindow):
 
-    def __init__(self,parent=None):
+    def __init__(self, parent=None):
         super(ImageViewer, self).__init__(parent)
 
         self.scaleFactor = 0.0
@@ -81,21 +83,21 @@ class ImageViewer(QMainWindow):
         self.imageLabel.setScaledContents(True)
 
         self.scrollArea = QScrollArea()
-        #self.scrollArea.setBackgroundRole(QPalette.Dark)
-        #self.scrollArea.setWidget(self.imageLabel)
-        #self.setCentralWidget(self.scrollArea)
+        # self.scrollArea.setBackgroundRole(QPalette.Dark)
+        # self.scrollArea.setWidget(self.imageLabel)
+        # self.setCentralWidget(self.scrollArea)
         self.setCentralWidget(self.imageLabel)
         self.setWindowTitle("Image Viewer")
 
-    def showpic(self,filepath,maxSize,minSize):        
-        #super(ImageViewer, self).showpic(filepath,maxSize,minSize)
-        self.resize(minSize,maxSize)
-        
+    def showpic(self, filepath, maxSize, minSize):
+        # super(ImageViewer, self).showpic(filepath,maxSize,minSize)
+        self.resize(minSize, maxSize)
+
         image = QImage(filepath)
         self.imageLabel.setPixmap(QPixmap.fromImage(image))
         self.scaleFactor = 1.0
         self.imageLabel.adjustSize()
- 
+
 
 class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
 
@@ -109,14 +111,14 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         self.devicelist.addItems(dict_device.keys())
 
         self.apklist.addItems(self.getapklist())
-        self.changepath.clicked.connect(self.get_text)  # 会挂，不能用啊,暂时用来测试功能
+        self.changepath.clicked.connect(self.changePath)  # 会挂，不能用啊,暂时用来测试功能
         self.btn_reset.clicked.connect(self.reset)
         self.btn_install.clicked.connect(self.installapp)
         self.btn_unitstall.clicked.connect(self.unitstallapp)
         self.btn_screencut.clicked.connect(self.cutscreen)
         self.btn_resultclean.clicked.connect(self.cleanresult)
         self.btn_clearcache.clicked.connect(self.clearCache)
-        
+        self.btn_deviceinfo.clicked.connect(self.getdeviceinfo)
 
     # 重新设置apkpath并重新获取当前路径下的apklist，重新获取devices
     def reset(self):
@@ -141,8 +143,12 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
 
         path = cpath.getExistingDirectory()
         self.text_result.append(str(path))
-
         self.apkpath.setText(str(path))
+
+        # 重置apk
+        self.apklist.clear()
+        self.getapklist()
+        self.apklist.addItems(self.getapklist())
 
     def getapklist(self):
         global list_apks
@@ -186,6 +192,39 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
 
         # print(self.label_2.toPlainText())
 
+    def getdeviceinfo(self):
+        device_info = ["\n品牌：", "\n型号：", "\n分辨率：","\nAndorid版本：","\nSDK版本：","\nCPU版本：","\n虚拟内存："]
+        self.text_result.clear()
+        text_devicesname = self.devicelist.currentText()
+
+        text_sname = dict_device[text_devicesname]
+        command = "adb -s " + text_sname + \
+            " shell getprop | grep -E \"ro.product.brand\|ro.product.model\|build.version.sdk\|build.version.release\|product.cpu.abi]\|dalvik.vm.heapsize\""
+        self.text_result.append(command)
+        result = (exctcmd(command).replace("[", "").replace(
+            "]", "").replace(" ", "").replace(":", " ").split())
+        for x in range(len(result)):
+            if x % 2 != 0:
+                s = result[x - 1]
+                if "brand" in s:
+                    device_info.insert(device_info.index("\n品牌：") + 1, result[x])
+                if "model" in s:
+                    device_info.insert(device_info.index("\n型号：") + 1, result[x])
+                if "sdk" in s:
+                    device_info.insert(device_info.index("\nSDK版本：") + 1, result[x])
+                if "release" in s:
+                    device_info.insert(device_info.index("\nAndorid版本：") + 1, result[x])
+                if "cpu" in s:
+                    device_info.insert(device_info.index("\nCPU版本：") + 1, result[x])
+                if "heapsize" in s:
+                    device_info.insert(device_info.index("\n虚拟内存：") + 1, result[x])
+        command = "adb -s " + text_sname + " shell wm size"
+        result = (exctcmd(command).split())
+    
+        device_info.insert(device_info.index("\n分辨率：") + 1,result[-1])
+
+        self.text_result.append("".join(device_info))
+
     def installapp(self):
         self.text_result.clear()
         text_appname = self.apklist.currentText()
@@ -193,6 +232,7 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         text_devicesname = self.devicelist.currentText()
 
         installtype = " "
+
         if self.overinstall.isChecked():
             installtype = " -r "
 
@@ -237,6 +277,10 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         self.text_result.clear()
         text_devicesname = self.devicelist.currentText()
         self.text_result.append(text_devicesname)
+
+        if os.path.exists(os.path.abspath('.') + os.sep + "ScreencapFiles") == False:
+            os.mkdir(os.path.abspath('.') + os.sep + "ScreencapFiles")
+
         if text_devicesname != "":
             nowtime = datetime.datetime.now().strftime(timefomate)
             filename = nowtime + ".png"
@@ -247,59 +291,58 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
             pids = exctcmd(command)
             self.text_result.append(pids)
 
-            command = "adb -s " + text_sname + " pull /sdcard/" + filename + " " + os.path.abspath('.')
+            command = "adb -s " + text_sname + " pull /sdcard/" + filename + \
+                " " + os.path.abspath('.') + os.sep + "ScreencapFiles" + os.sep + filename
             self.text_result.append(command)
             pids = exctcmd(command)
             self.text_result.append(pids)
 
             time.sleep(1)
-            filepath = os.path.abspath('.') + os.sep + filename
-            if os.path.exists(filepath):                
-            
+            filepath = os.path.abspath('.') + os.sep + "ScreencapFiles" + os.sep + filename
+            if os.path.exists(filepath):
+
                 self.text_result.append(filepath)
                 img = Image.open(filepath)
-                imgSize = img.size #图片的长和宽            
-                maxSize = max(imgSize) #图片的长边    
-                minSize = min(imgSize) #图片的短边
+                imgSize = img.size  # 图片的长和宽
+                maxSize = max(imgSize)  # 图片的长边
+                minSize = min(imgSize)  # 图片的短边
 
-                screenminsize = GetSystemMetrics(1)-80
+                screenminsize = GetSystemMetrics(1) - 80
 
-                if maxSize > screenminsize:        
+                if maxSize > screenminsize:
                     minSize = screenminsize * minSize / maxSize
                     maxSize = screenminsize
-                
-                self.imageViewer.showpic(filepath,maxSize,minSize)
+
+                self.imageViewer.showpic(filepath, maxSize, minSize)
                 self.imageViewer.show()
 
         else:
             QMessageBox.warning(self, "警告", "请先选择设备", QMessageBox.Yes)
 
-
     def opencutpic(self):
-            
-            #filepath = os.path.abspath('.') + os.sep + filename
+
+            # filepath = os.path.abspath('.') + os.sep + filename
         filepath = "C:/Users/Ju/Desktop/shably.jpg"
         self.text_result.append(filepath)
         img = Image.open(filepath)
-        imgSize = img.size #图片的长和宽            
-        maxSize = max(imgSize) #图片的长边    
-        minSize = min(imgSize) #图片的短边
-        if maxSize > 700:        
+        imgSize = img.size  # 图片的长和宽
+        maxSize = max(imgSize)  # 图片的长边
+        minSize = min(imgSize)  # 图片的短边
+        if maxSize > 700:
             minSize = 700 * minSize / maxSize
             maxSize = 700
 
-
-        #time.sleep(10)
+        # time.sleep(10)
         print(maxSize)
         print(minSize)
-        
+
         self.text_result.append(filepath)
         self.text_result.append(str(maxSize))
         self.text_result.append(str(minSize))
-        
-        self.imageViewer.showpic(filepath,maxSize,minSize)
+
+        self.imageViewer.showpic(filepath, maxSize, minSize)
         self.imageViewer.show()
-    
+
     def clearCache(self):
         self.text_result.clear()
         text_packagename = self.packagename.text()
@@ -318,19 +361,16 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         else:
             QMessageBox.warning(self, "警告", "请先选择设备", QMessageBox.Yes)
 
-
     def cleanresult(self):
         self.text_result.clear()
         # self.text_result.setText("")
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
+    l = {}
     l = getdeviceslist()
 
     app = QtWidgets.QApplication(sys.argv)
     myshow = MyWindow()
-    #icon = QtGui.QIcon("logo.png")
-    #icon.addPixmap(QtGui.QPixmap("logo.ico"),QtGui.QIcon.Normal, QtGui.QIcon.Off)
-    #myshow.setWindowIcon(QIcon('logo.ico'))
     myshow.show()
     sys.exit(app.exec_())
