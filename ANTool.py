@@ -22,6 +22,7 @@ from win32api import GetSystemMetrics
 packageName = 'com.fangyanshow.dialectshow'
 comman = "adb devices"
 dict_device = {}
+dict_devicebox = {}
 list_apks = []
 timefomate = "%Y%m%d%H%M%S"
 
@@ -34,7 +35,7 @@ def exctcmd(command):
     result = s.decode('ascii')
 
     obj.terminate()
-
+    # print(result)
     return result
 
 
@@ -58,14 +59,16 @@ def getdeviceslist():
     if count != 0:
         for x in range(count):
             if pid_tag[x] == 'device':
-                command = 'adb -s ' + \
-                    pid_s[x] + ' shell cat /system/build.prop | grep model'
-                # pid_s[x] + 'shell getprop | grep
-                # "model\|version.sdk\|manufacturer\|hardware\|platform\|revision\|serialno\|product.name\|brand"'
-                modeinfo = exctcmd(command).strip('\n')[17:]
-                pid_tag[x] = pid_tag[x] + "-" + modeinfo
+                command = "adb -s " + \
+                    pid_s[x] + " shell getprop | grep \"ro.product.model\""
+                #'shell getprop | grep "ro.product.model"'cat /system/build.prop
 
-            dict_device[pid_tag[x]] = pid_s[x]
+                modelinfo = exctcmd(command).replace(
+                    "\r", "").replace(" [", "[").strip('\n')[19:]
+                # print(modeinfo)
+                pid_tag[x] = modelinfo
+
+                dict_device[pid_tag[x]] = pid_s[x]  # 仅考虑连接成功的设备
 
     return dict_device.keys()
 
@@ -74,6 +77,9 @@ class ImageViewer(QMainWindow):
 
     def __init__(self, parent=None):
         super(ImageViewer, self).__init__(parent)
+
+
+
 
         self.scaleFactor = 0.0
 
@@ -103,12 +109,20 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
 
     def __init__(self):
         super(MyWindow, self).__init__()
+        global dict_devicebox
+
         self.setupUi(self)
 
         self.imageViewer = ImageViewer(self)
 
         self.apkpath.setText(os.path.abspath('.'))
-        self.devicelist.addItems(dict_device.keys())
+        # self.devicelist.addItems(dict_device.keys())
+
+        self.setDevices()
+
+        dict_devicebox = dict.fromkeys(dict_device.keys(), 0)
+
+        #self.cutscreen()
 
         self.apklist.addItems(self.getapklist())
         self.changepath.clicked.connect(self.changePath)  # 会挂，不能用啊,暂时用来测试功能
@@ -118,7 +132,140 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         self.btn_screencut.clicked.connect(self.cutscreen)
         self.btn_resultclean.clicked.connect(self.cleanresult)
         self.btn_clearcache.clicked.connect(self.clearCache)
-        self.btn_deviceinfo.clicked.connect(self.getdeviceinfo)
+        self.btn_deviceinfo.clicked.connect(self.GetDeviceInfo)
+        self.btn_closeapp.clicked.connect(self.get_text)
+
+    def setDevices(self):
+        global dict_devicebox
+        l = list(dict_device.keys())
+        a = len(l)
+        if a == 0:
+            self.device_1.setText("")
+            self.device_1.setChecked(False)
+            self.device_2.setText("")
+            self.device_2.setChecked(False)
+            self.device_3.setText("")
+            self.device_3.setChecked(False)
+            self.device_4.setText("")
+            self.device_4.setChecked(False)
+            self.device_5.setText("")
+            self.device_5.setChecked(False)
+            self.device_6.setText("")
+            self.device_6.setChecked(False)
+
+        elif a == 1:
+            self.device_1.setChecked(True)
+            self.device_1.setText(l[0])
+            self.device_2.setText("")
+            self.device_2.setChecked(False)
+            self.device_3.setText("")
+            self.device_3.setChecked(False)
+            self.device_4.setText("")
+            self.device_4.setChecked(False)
+            self.device_5.setText("")
+            self.device_5.setChecked(False)
+            self.device_6.setText("")
+            self.device_6.setChecked(False)
+
+        elif a == 2:
+            self.device_1.setText(l[0])
+            self.device_2.setText(l[1])           
+            
+            self.device_3.setText("")
+            self.device_4.setText("")
+            self.device_5.setText("")
+            self.device_6.setText("")
+            self.device_1.setChecked(True)
+            self.device_2.setChecked(False)
+            self.device_3.setChecked(False)            
+            self.device_4.setChecked(False)            
+            self.device_5.setChecked(False)            
+            self.device_6.setChecked(False)
+
+        elif a == 3:
+
+            self.device_1.setText(l[0])
+            self.device_2.setText(l[1])
+            self.device_3.setText(l[2])
+            self.device_4.setText("")
+            self.device_5.setText("")
+            self.device_6.setText("")
+            self.device_1.setChecked(True)
+            self.device_2.setChecked(False)
+            self.device_3.setChecked(False)            
+            self.device_4.setChecked(False)            
+            self.device_5.setChecked(False)            
+            self.device_6.setChecked(False)
+        elif a == 4:
+            
+            self.device_1.setText(l[0])
+            self.device_2.setText(l[1])
+            self.device_3.setText(l[2])
+            self.device_4.setText(l[3])            
+            self.device_5.setText("")            
+            self.device_6.setText("")
+            self.device_1.setChecked(True)
+            self.device_2.setChecked(False)
+            self.device_3.setChecked(False)            
+            self.device_4.setChecked(False)            
+            self.device_5.setChecked(False)            
+            self.device_6.setChecked(False)
+        elif a == 5:            
+            self.device_1.setText(l[0])
+            self.device_2.setText(l[1])
+            self.device_3.setText(l[2])
+            self.device_4.setText(l[3])
+            self.device_5.setText(l[4])            
+            self.device_6.setText("")
+            self.device_1.setChecked(True)
+            self.device_2.setChecked(False)
+            self.device_3.setChecked(False)            
+            self.device_4.setChecked(False)            
+            self.device_5.setChecked(False)            
+            self.device_6.setChecked(False)
+        
+        elif a >= 6:
+            self.device_1.setChecked(True)
+            self.device_1.setText(l[0])
+            self.device_2.setText(l[1])
+            self.device_3.setText(l[2])
+            self.device_4.setText(l[3])
+            self.device_5.setText(l[4])
+            self.device_6.setText(l[5])
+
+    def getCheckedDevices(self):
+        global dict_devicebox
+        if self.device_1.isChecked():
+            dict_devicebox[self.device_1.text()] = 1
+        else:
+            dict_devicebox[self.device_1.text()] = 0
+        if self.device_2.isChecked():
+            dict_devicebox[self.device_2.text()] = 1
+        else:
+            dict_devicebox[self.device_2.text()] = 0
+        if self.device_3.isChecked():
+            dict_devicebox[self.device_3.text()] = 1
+        else:
+            dict_devicebox[self.device_3.text()] = 0
+        if self.device_4.isChecked():
+            dict_devicebox[self.device_4.text()] = 1
+        else:
+            dict_devicebox[self.device_4.text()] = 0
+        if self.device_5.isChecked():
+            dict_devicebox[self.device_5.text()] = 1
+        else:
+            dict_devicebox[self.device_5.text()] = 0
+        if self.device_6.isChecked():
+            dict_devicebox[self.device_6.text()] = 1
+        else:
+            dict_devicebox[self.device_6.text()] = 0
+
+        print("dict_devicebox:", dict_devicebox)
+        checkeddevice = []
+        for (k, v) in dict_devicebox.items():
+            if v == 1 and k != '':
+                checkeddevice.append(k)
+        return checkeddevice
 
     # 重新设置apkpath并重新获取当前路径下的apklist，重新获取devices
     def reset(self):
@@ -126,17 +273,20 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         global dict_device, list_apks
 
         # 将设备以及apk列表/apkpath全部置空/重置
-        self.devicelist.clear()
+        self.device_1.setText("")
+        self.device_2.setText("")
         self.apklist.clear()
         self.apkpath.setText(os.path.abspath('.'))
 
         getdeviceslist()
-        self.devicelist.addItems(dict_device.keys())
+        self.setDevices()
         self.apklist.addItems(self.getapklist())
 
     # 打开文件选择器，选择文件夹
     def changePath(self):
         self.text_result.clear()
+
+
         cpath = QFileDialog()
         # path=open.getOpenFileNames()
         # self.path=open.getOpenFileNames()
@@ -167,14 +317,15 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         return list_apks
 
     def get_text(self):
+        global dict_devicebox
         self.text_result.clear()
         self.text_result.append('get_text')
 
-        device = self.devicelist.currentText()  # 获取设备信息当前的选中的String
-        self.text_result.append(device)
-        if device != "":
-            device_s = dict_device[device]
-            self.text_result.append(device_s)
+        # device = self.devicelist.currentText()  # 获取设备信息当前的选中的String
+        # self.text_result.append(device)
+        # if device != "":
+        #    device_s = dict_device[device]
+        #    self.text_result.append(device_s)
 
         apkpath = self.apkpath.text()
         self.text_result.append(apkpath)
@@ -190,101 +341,145 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
         sactivity = self.startactivity.text()
         self.text_result.append(sactivity)
 
+        aa = self.device_1.text()
+        self.text_result.append(aa)
+
         # print(self.label_2.toPlainText())
 
-    def getdeviceinfo(self):
-        device_info = ["\n品牌：", "\n型号：", "\n分辨率：","\nAndorid版本：","\nSDK版本：","\nCPU版本：","\n虚拟内存："]
+    def GetDeviceInfo(self):
+        list_devices = self.getCheckedDevices()
         self.text_result.clear()
-        text_devicesname = self.devicelist.currentText()
 
-        text_sname = dict_device[text_devicesname]
-        command = "adb -s " + text_sname + \
-            " shell getprop | grep -E \"ro.product.brand\|ro.product.model\|build.version.sdk\|build.version.release\|product.cpu.abi]\|dalvik.vm.heapsize\""
-        self.text_result.append(command)
-        result = (exctcmd(command).replace("[", "").replace(
-            "]", "").replace(" ", "").replace(":", " ").split())
-        for x in range(len(result)):
-            if x % 2 != 0:
-                s = result[x - 1]
-                if "brand" in s:
-                    device_info.insert(device_info.index("\n品牌：") + 1, result[x])
-                if "model" in s:
-                    device_info.insert(device_info.index("\n型号：") + 1, result[x])
-                if "sdk" in s:
-                    device_info.insert(device_info.index("\nSDK版本：") + 1, result[x])
-                if "release" in s:
-                    device_info.insert(device_info.index("\nAndorid版本：") + 1, result[x])
-                if "cpu" in s:
-                    device_info.insert(device_info.index("\nCPU版本：") + 1, result[x])
-                if "heapsize" in s:
-                    device_info.insert(device_info.index("\n虚拟内存：") + 1, result[x])
-        command = "adb -s " + text_sname + " shell wm size"
-        result = (exctcmd(command).split())
-    
-        device_info.insert(device_info.index("\n分辨率：") + 1,result[-1])
+        # 遍历勾选的设备
+        for devicename in list_devices:
 
-        self.text_result.append("".join(device_info))
+            text_sname = dict_device[devicename]
+            print(text_sname, devicename)
+
+            # 初始化设备信息list
+            device_info = ["\n品牌：", "\n型号：", "\n分辨率：",
+                           "\nAndorid版本：", "\nSDK版本：", "\nCPU版本：", "\n虚拟内存："]
+
+            # 获取出分辨率以外的信息
+            command = "adb -s " + text_sname + \
+                " shell getprop | grep -E \"ro.product.brand\|ro.product.model\|build.version.sdk\|build.version.release\|product.cpu.abi]\|dalvik.vm.heapsize\""
+            self.text_result.append(command)
+            result = (exctcmd(command).replace("[", "").replace(
+                "]", "").replace(" ", "").replace(":", " ").split())
+            print(result)
+            # 将通过adb 获取到的设备信息插入到list中
+            for x in range(len(result)):
+                if x % 2 != 0:
+                    s = result[x - 1]
+                    if "brand" in s:
+                        device_info.insert(
+                            device_info.index("\n品牌：") + 1, result[x])
+                    if "model" in s:
+                        device_info.insert(
+                            device_info.index("\n型号：") + 1, result[x])
+                    if "sdk" in s:
+                        device_info.insert(device_info.index(
+                            "\nSDK版本：") + 1, result[x])
+                    if "release" in s:
+                        device_info.insert(device_info.index(
+                            "\nAndorid版本：") + 1, result[x])
+                    if "cpu" in s:
+                        device_info.insert(device_info.index(
+                            "\nCPU版本：") + 1, result[x])
+                    if "heapsize" in s:
+                        device_info.insert(device_info.index(
+                            "\n虚拟内存：") + 1, result[x])
+
+            # 获取分别率信息
+            command = "adb -s " + text_sname + " shell wm size"
+            result = (exctcmd(command).split())
+
+            device_info.insert(device_info.index("\n分辨率：") + 1, result[-1])
+
+            self.text_result.append("".join(device_info))
 
     def installapp(self):
         self.text_result.clear()
-        text_appname = self.apklist.currentText()
-        text_apppath = self.apkpath.text()
-        text_devicesname = self.devicelist.currentText()
+        text_appname = self.apklist.currentText()  # 选中的apk
+        text_apppath = self.apkpath.text()  # 当前apk路径
+        # text_devicesname=self.devicelist.currentText()
 
         installtype = " "
 
         if self.overinstall.isChecked():
             installtype = " -r "
 
-        if text_devicesname != "":
-            if text_appname != "":
-                if installtype == " ":
-                    self.unitstallapp()
-                text_sname = dict_device[text_devicesname]
-                command = "adb -s " + text_sname + " install" + \
-                    installtype + text_apppath + os.sep + text_appname
-                self.text_result.append(command)
-                pids = exctcmd(command)
-                self.text_result.append(pids)
+        if text_appname != "":
+            list_devices = self.getCheckedDevices()
+
+            if len(list_devices) != 0:
+
+                # 遍历勾选的设备
+                for devicename in list_devices:
+
+                    text_sname = dict_device[devicename]
+                    print(text_sname, devicename)
+
+                    if installtype == " ":
+                        self.unitstallapp()
+                    text_sname = dict_device[devicename]
+                    command = "adb -s " + text_sname + " install" + \
+                        installtype + text_apppath + os.sep + text_appname
+                    self.text_result.append(command)
+                    pids = exctcmd(command)
+
+                    self.text_result.append(pids[-50:])
             else:
                 QMessageBox.warning(
-                    self, "警告", "请先选择apk！", QMessageBox.Yes)
+                    self, "警告", "请先选择设备", QMessageBox.Yes)
         else:
-            QMessageBox.warning(self, "警告", "请先选择设备", QMessageBox.Yes)
+            QMessageBox.warning(self, "警告", "请先选择apk！", QMessageBox.Yes)
 
     def unitstallapp(self):
-        self.text_result.clear()
+        # self.text_result.clear()
         text_packagename = self.packagename.text()
-        text_devicesname = self.devicelist.currentText()
+        text_appname = self.apklist.currentText()  # 选中的apk
 
-        if text_devicesname != "":
-            if text_packagename != "":
-                text_sname = dict_device[text_devicesname]
-                command = "adb -s " + text_sname + " uninstall " + text_packagename
-                self.text_result.append(command)
-                pids = exctcmd(command)
-                self.text_result.append(pids)
+        if text_appname != "":
+            list_devices = self.getCheckedDevices()
+
+            if len(list_devices) != 0:
+
+                # 遍历勾选的设备
+                for devicename in list_devices:
+
+                    text_sname = dict_device[devicename]
+                    print(text_sname, devicename)
+
+                    text_sname = dict_device[devicename]
+                    command = "adb -s " + text_sname + " uninstall " + text_packagename
+                    self.text_result.append(command)
+                    pids = exctcmd(command)
+                    self.text_result.append(pids)
             else:
                 QMessageBox.warning(
-                    self, "警告", "请先填写packagename！", QMessageBox.Yes)
+                    self, "警告", "请先选择设备", QMessageBox.Yes)
         else:
-            QMessageBox.warning(self, "警告", "请先选择设备", QMessageBox.Yes)
+            QMessageBox.warning(
+                self, "警告", "请先填写packagename！", QMessageBox.Yes)
 
         # self.text_result.setText('取消按钮改变啦')
         # QMessageBox.warning(self,"警告","信息提示！",QMessageBox.Yes)
 
     def cutscreen(self):
         self.text_result.clear()
-        text_devicesname = self.devicelist.currentText()
-        self.text_result.append(text_devicesname)
 
-        if os.path.exists(os.path.abspath('.') + os.sep + "ScreencapFiles") == False:
-            os.mkdir(os.path.abspath('.') + os.sep + "ScreencapFiles")
+        list_devices = self.getCheckedDevices()
 
-        if text_devicesname != "":
+        if len(list_devices) == 1:
+
+            if os.path.exists(os.path.abspath('.') + os.sep + "ScreencapFiles") == False:
+                os.mkdir(os.path.abspath('.') + os.sep + "ScreencapFiles")
+
             nowtime = datetime.datetime.now().strftime(timefomate)
             filename = nowtime + ".png"
-            text_sname = dict_device[text_devicesname]
+
+            text_sname = dict_device[list_devices[0]]
             command = "adb -s " + text_sname + " shell screencap -p /sdcard/" + filename
             self.text_result.append(command)
 
@@ -292,13 +487,15 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
             self.text_result.append(pids)
 
             command = "adb -s " + text_sname + " pull /sdcard/" + filename + \
-                " " + os.path.abspath('.') + os.sep + "ScreencapFiles" + os.sep + filename
+                    " " + os.path.abspath('.') + os.sep + \
+                    "ScreencapFiles" + os.sep + filename
             self.text_result.append(command)
             pids = exctcmd(command)
             self.text_result.append(pids)
 
             time.sleep(1)
             filepath = os.path.abspath('.') + os.sep + "ScreencapFiles" + os.sep + filename
+            
             if os.path.exists(filepath):
 
                 self.text_result.append(filepath)
@@ -316,6 +513,9 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
                 self.imageViewer.showpic(filepath, maxSize, minSize)
                 self.imageViewer.show()
 
+        elif len(list_devices) > 1:
+            QMessageBox.warning(
+                self, "警告", "仅支持单个设备截图，请先选择一个设备", QMessageBox.Yes)
         else:
             QMessageBox.warning(self, "警告", "请先选择设备", QMessageBox.Yes)
 
@@ -346,20 +546,26 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
     def clearCache(self):
         self.text_result.clear()
         text_packagename = self.packagename.text()
-        text_devicesname = self.devicelist.currentText()
 
-        if text_devicesname != "":
-            if text_packagename != "":
-                text_sname = dict_device[text_devicesname]
+        if text_packagename != "":
+            list_devices = self.getCheckedDevices()
+
+            if len(list_devices) == 1:
+
+                text_sname = dict_device[list_devices[0]]
                 command = "adb -s " + text_sname + " shell pm clear " + text_packagename
                 self.text_result.append(command)
                 pids = exctcmd(command)
                 self.text_result.append(pids)
-            else:
+
+            elif len(list_devices) > 1:
                 QMessageBox.warning(
-                    self, "警告", "请先填写packagename！", QMessageBox.Yes)
+                    self, "警告", "仅支持单个设备截图，请先选择一个设备", QMessageBox.Yes)
+            else:
+                QMessageBox.warning(self, "警告", "请先选择设备", QMessageBox.Yes)
         else:
-            QMessageBox.warning(self, "警告", "请先选择设备", QMessageBox.Yes)
+            QMessageBox.warning(
+                self, "警告", "请先填写packagename！", QMessageBox.Yes)
 
     def cleanresult(self):
         self.text_result.clear()
@@ -367,8 +573,11 @@ class MyWindow(QtWidgets.QMainWindow, Ui_ANTool):
 
 
 if __name__ == "__main__":
-    l = {}
-    l = getdeviceslist()
+
+    print(getdeviceslist())
+    l = []
+    l = list(dict_device.keys())
+    print(len(l))
 
     app = QtWidgets.QApplication(sys.argv)
     myshow = MyWindow()
